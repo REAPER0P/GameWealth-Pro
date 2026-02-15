@@ -1,0 +1,7 @@
+{
+  "name": "GameWealth Pro",
+  "description": "A high-fidelity game earning platform where users can play various simulators like Pixel Runner and Neural Hacker to earn real rewards, featuring daily check-ins, lucky spins, and global leaderboards.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

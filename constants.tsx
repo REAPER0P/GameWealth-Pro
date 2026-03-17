@@ -2,7 +2,7 @@ import { GameType, GameInfo } from './types';
 
 export const STREAK_REWARDS = [5, 7, 10, 12, 15, 18, 25];
 
-export const DAILY_CHECKIN_GEM_REWARD = 25;
+export const DAILY_CHECKIN_GEM_REWARD = 20;
 export const AD_REWARD_GEMS = 5;
 export const AD_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 Hour Cooldown
 

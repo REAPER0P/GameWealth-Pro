@@ -52,7 +52,11 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onShowTerms, onShowPrivacy }) =>
         await signInWithEmailAndPassword(auth, email, password);
         onSuccess();
       } else if (view === 'signup') {
-        // 1. Check Device Integrity
+        // 1. Create User first (to get Auth context for DB access)
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 2. Check Device Integrity
         const deviceId = getDeviceId();
         const usersRef = ref(db, 'users');
         
@@ -62,21 +66,32 @@ const Auth: React.FC<AuthProps> = ({ onSuccess, onShowTerms, onShowPrivacy }) =>
           const deviceSnapshot = await get(deviceQuery);
 
           if (deviceSnapshot.exists()) {
-            throw new Error("DEVICE_LIMIT: This device is already bound to an existing node.");
+            let isOtherUser = false;
+            deviceSnapshot.forEach((child) => {
+              // If the device ID is found on a DIFFERENT user, block it.
+              // (App.tsx might have already created the record for THIS user, which is fine)
+              if (child.key !== user.uid) {
+                isOtherUser = true;
+              }
+            });
+
+            if (isOtherUser) {
+              await user.delete(); // Rollback: Delete the new account
+              throw new Error("DEVICE_LIMIT: This device is already bound to an existing node.");
+            }
           }
         } catch (queryErr: any) {
-          // If the error is because the index is missing, we allow registration to proceed
-          // to prevent blocking the user during initial setup.
-          if (queryErr.message && queryErr.message.includes("indexOn")) {
-            console.warn("Device check skipped: Database index missing. Please add \".indexOn\": \"deviceId\" to your Firebase Database Rules.");
-          } else {
-            // Rethrow real errors (like DEVICE_LIMIT)
+          if (queryErr.message && queryErr.message.includes("DEVICE_LIMIT")) {
             throw queryErr;
+          }
+          if (queryErr.message && queryErr.message.includes("Permission denied")) {
+            console.warn("Permission denied during device check. Proceeding with signup.");
+          } else {
+            // Ignore other errors (like index missing) to allow signup to proceed
+            console.warn("Device check warning:", queryErr);
           }
         }
 
-        // 2. Proceed with Signup
-        await createUserWithEmailAndPassword(auth, email, password);
         onSuccess();
       } else if (view === 'forgot') {
         await sendPasswordResetEmail(auth, email);

@@ -48,8 +48,12 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   // System Config State
   const [config, setConfig] = useState({
     extractionThreshold: 5000,
-    growthReward: 50
+    growthReward: 50,
+    gemValue: 1
   });
+  
+  // Local state for gem value input to handle decimals
+  const [gemValueInput, setGemValueInput] = useState<string>('1');
 
   useEffect(() => {
     // 1. Fetch only Pending bucket
@@ -79,7 +83,14 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const configRef = ref(db, 'systemConfig');
     const unsubscribeConfig = onValue(configRef, (snapshot) => {
       if (snapshot.exists()) {
-        setConfig(snapshot.val());
+        const data = snapshot.val();
+        const gVal = data.gemValue !== undefined ? data.gemValue * 1000 : 1000;
+        setConfig({
+          extractionThreshold: data.extractionThreshold || 5000,
+          growthReward: data.growthReward || 50,
+          gemValue: gVal
+        });
+        setGemValueInput(gVal.toString());
       }
     });
 
@@ -213,7 +224,12 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const handleUpdateConfig = async () => {
     try {
       const configRef = ref(db, 'systemConfig');
-      await set(configRef, config);
+      // Save UI value (per 1000 gems) converted back to DB value (per 1 gem)
+      await set(configRef, {
+        extractionThreshold: Number(config.extractionThreshold),
+        growthReward: Number(config.growthReward),
+        gemValue: Number(config.gemValue) / 1000
+      });
       alert('Logic Matrix Updated Successfully');
     } catch (err) {
       alert("Error saving config: " + (err as Error).message);
@@ -303,7 +319,12 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                            {req.method === WithdrawalMethod.UPI ? '📱' : req.method === WithdrawalMethod.PHONEPE ? '🟣' : '🏦'}
                         </div>
                         <div>
-                          <p className="font-bold text-xl text-white font-orbitron tracking-tight">{req.amount} GEMS</p>
+                          <p className="font-bold text-xl text-white font-orbitron tracking-tight">
+                            {req.amount} GEMS 
+                            <span className="text-xs text-green-400 ml-2">
+                              (≈ {(req.amount * (config.gemValue / 1000)).toFixed(2)})
+                            </span>
+                          </p>
                           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{req.username} | {req.method}</p>
                         </div>
                       </div>
@@ -520,6 +541,21 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       className="w-full bg-black border border-slate-800 rounded-2xl px-6 py-4 text-white font-orbitron focus:border-blue-500 outline-none transition-all focus:scale-[1.02] focus:shadow-lg focus:shadow-blue-500/20" 
                     />
                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest px-2">Exchange Rate (Currency per 1000 Gems)</label>
+                     <input 
+                       type="number" 
+                       value={gemValueInput}
+                       onChange={(e) => {
+                         const val = e.target.value;
+                         setGemValueInput(val);
+                         const parsed = parseFloat(val);
+                         setConfig({ ...config, gemValue: isNaN(parsed) ? 0 : parsed });
+                       }}
+                       placeholder="e.g. 15 (means 1000 Gems = 15 Currency)"
+                       className="w-full bg-black border border-slate-800 rounded-2xl px-6 py-4 text-white font-orbitron focus:border-blue-500 outline-none transition-all focus:scale-[1.02] focus:shadow-lg focus:shadow-blue-500/20" 
+                     />
+                  </div>
                  <div className="space-y-2">
                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest px-2">Growth Reward (GEMS)</label>
                     <input 

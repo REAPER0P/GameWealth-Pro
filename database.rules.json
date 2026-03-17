@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "systemConfig": {
+      ".read": "auth != null",
+      ".write": "auth.token.email === 'rahulmaity1995m@gmail.com'"
+    },
+    "users": {
+      ".indexOn": ["gems", "referredBy", "referralCode", "deviceId"],
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null"
+      }
+    },
+    "withdrawals": {
+      ".read": "auth != null",
+      "pending": {
+        ".indexOn": "uid",
+        ".write": "auth != null"
+      },
+      "completed": {
+        ".indexOn": "uid",
+        ".write": "auth != null"
+      }
+    }
+  }
+}

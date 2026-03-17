@@ -113,7 +113,8 @@ const App: React.FC = () => {
   // System Config State
   const [systemConfig, setSystemConfig] = useState({
     extractionThreshold: 5000,
-    growthReward: 50
+    growthReward: 50,
+    gemValue: 1 // Default value per gem
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -190,7 +191,8 @@ const App: React.FC = () => {
         const config = snapshot.val();
         setSystemConfig({
           extractionThreshold: config.extractionThreshold || 5000,
-          growthReward: config.growthReward || 50
+          growthReward: config.growthReward || 50,
+          gemValue: (config.gemValue !== undefined && config.gemValue !== null) ? config.gemValue : 1
         });
         // Update local state if needed
         setWithdrawalAmount(prev => Math.max(prev, config.extractionThreshold || 5000));
@@ -876,7 +878,7 @@ const App: React.FC = () => {
   const handleShare = (platform: 'wa' | 'tg' | 'fb') => {
     const link1 = 'https://gamewealthpro.netlify.app/';
     const link2 = 'https://gamewealth-pro.netlify.app/';
-    const msg = `Join the GameWealth PRO Yield Matrix and start extracting virtual gems! 💎\nUse my protocol code: ${stats.referralCode}\nDownload & Play:\n${link1}\n${link2}`;
+    const msg = `Join the GW PRO Yield Matrix and start extracting virtual gems! 💎\nUse my protocol code: ${stats.referralCode}\nDownload & Play:\n${link1}\n${link2}`;
     
     switch(platform) {
       case 'wa': window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank'); break;
@@ -1315,7 +1317,10 @@ const App: React.FC = () => {
                             onChange={(e) => setWithdrawalAmount(Number(e.target.value))} 
                             className="w-full bg-black border border-slate-800 rounded-2xl px-5 py-4 text-white font-bold font-orbitron focus:border-blue-500 outline-none transition-all focus:scale-[1.02] focus:shadow-lg focus:shadow-blue-500/20" 
                           />
-                          <p className="text-[9px] text-slate-600 px-1 uppercase tracking-tighter">Est. Value: <span className="text-blue-400 font-bold">₹{(withdrawalAmount / 100).toFixed(2)} INR</span></p>
+                          <p className="text-[9px] text-slate-600 px-1 uppercase tracking-tighter">
+                            Est. Value: <span className="text-blue-400 font-bold">₹{(withdrawalAmount * systemConfig.gemValue).toFixed(2)} INR</span>
+                            <span className="ml-2 text-slate-500 opacity-70">(@ {systemConfig.gemValue * 1000}/1k)</span>
+                          </p>
                        </div>
                        {withdrawalMethod === WithdrawalMethod.UPI && (
                          <div className="space-y-2 animate-in fade-in">
@@ -1398,7 +1403,7 @@ const App: React.FC = () => {
                   <div className="mt-12 bg-black/30 p-6 rounded-[2rem] border border-white/5 flex justify-between items-center backdrop-blur-md transition-colors hover:bg-black/40">
                     <div className="text-left">
                        <p className="text-[9px] text-white/40 font-orbitron uppercase font-bold tracking-widest">Market Value</p>
-                       <p className="text-3xl font-bold text-white tracking-tighter">₹{(stats.gems / 100).toFixed(2)} <span className="text-xs font-normal opacity-30 text-center">INR</span></p>
+                       <p className="text-3xl font-bold text-white tracking-tighter">₹{(stats.gems * systemConfig.gemValue).toFixed(2)} <span className="text-xs font-normal opacity-30 text-center">INR</span></p>
                     </div>
                     <button onClick={() => { setIsWithdrawing(true); playSound('click'); }} className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl text-white transition-all active:scale-95 shadow-lg hover:scale-110"><i className="fas fa-external-link-alt"></i></button>
                   </div>
